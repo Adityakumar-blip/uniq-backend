@@ -1,7 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
-
-const app = express();
+const serverless = require("serverless-http");
+const app = serverless(express());
 const PORT = 3000;
 
 mongoose.connect(
