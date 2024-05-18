@@ -1,9 +1,12 @@
 const express = require("express");
+const cors = require("cors");
 const mongoose = require("mongoose");
 const serverless = require("serverless-http");
 const routes = require("./src/routes/routes");
 const app = express();
 const PORT = 3000;
+
+app.use(cors());
 
 mongoose.connect(
   "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"
