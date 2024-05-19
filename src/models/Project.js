@@ -22,6 +22,9 @@ const projectSchema = new mongoose.Schema(
       type: Array,
       required: true,
     },
+    img: {
+      type: String,
+    },
     request: {
       type: String,
     },

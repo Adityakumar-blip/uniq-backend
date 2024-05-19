@@ -11,7 +11,19 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
     },
-    image: {
+    img: {
+      type: String,
+    },
+    isAgreed: {
+      type: Boolean,
+    },
+    bio: {
+      type: String,
+    },
+    linkedIn: {
+      type: String,
+    },
+    github: {
       type: String,
     },
     userId: {

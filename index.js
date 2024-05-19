@@ -8,6 +8,8 @@ const PORT = 3000;
 
 app.use(cors());
 
+app.use("/uploads", express.static("uploads"));
+
 mongoose.connect(
   "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"
 );
