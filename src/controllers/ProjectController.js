@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const upload = require("../../utils/multerConfig");
 const Project = require("../models/Project");
 
@@ -22,6 +23,30 @@ exports.addProject = (req, res) => {
       }
     }
   });
+};
+
+exports.GetProjectById = async (req, res) => {
+  try {
+    console.log(req);
+    const projectId = req.body._id;
+    const projectData = await Project.db
+      .collection("projects")
+      .findOne({ _id: projectId });
+
+    console.log(projectData);
+
+    if (!projectData) {
+      return res.status(404).send({ message: "Project not found" });
+    }
+
+    console.log("project", projectData);
+    res.status(200).send(projectData);
+  } catch (error) {
+    console.log("error", error);
+    res
+      .status(500)
+      .send({ message: "Internal Server Error", error: error.message });
+  }
 };
 
 exports.getAllProjects = async (req, res) => {

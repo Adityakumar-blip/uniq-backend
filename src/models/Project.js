@@ -25,6 +25,15 @@ const projectSchema = new mongoose.Schema(
     img: {
       type: String,
     },
+    contributors: {
+      type: Array,
+    },
+    commits: {
+      type: Array,
+    },
+    links: {
+      type: Array,
+    },
     request: {
       type: String,
     },
