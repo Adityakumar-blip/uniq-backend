@@ -29,6 +29,12 @@ const UserSchema = new mongoose.Schema(
     userId: {
       type: String,
     },
+    projects: {
+      type: Array,
+    },
+    token: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

@@ -14,7 +14,7 @@ const projectSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    techStack: {
+    techstack: {
       type: Array,
       required: true,
     },
@@ -36,6 +36,13 @@ const projectSchema = new mongoose.Schema(
     },
     request: {
       type: String,
+    },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
+    user: {
+      type: Object,
     },
   },
   { timestamps: true }

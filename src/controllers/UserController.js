@@ -1,94 +1,130 @@
 const upload = require("../../utils/multerConfig");
 const db = require("../models/User");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const { body, validationResult } = require("express-validator");
+require("dotenv").config();
 
 // ** User Signup Controller
-exports.Signup = async (req, res) => {
-  try {
-    const userRegister = await db.findOne({ email: req.body.email });
+exports.Signup = [
+  body("fullName").notEmpty().withMessage("Full name is required"),
+  body("email").isEmail().withMessage("Invalid email"),
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-    if (!userRegister) {
-      let token = jwt.sign({ email: req?.email }, "AKPP", {
-        algorithm: "HS256",
-      });
-      const register = new db({
-        fullName: req.body.fullName,
-        email: req.body.email,
-        password: req.body.password,
-        image: req.body.image,
-      });
+    try {
+      const userRegister = await db.findOne({ email: req.body.email });
 
-      const response = await register.save();
-
-      console.log("Register", response);
-
-      if (response) {
-        const userResponse = {
-          fullName: response.fullName,
-          email: response.email,
-          image: response.image,
-          _id: response._id,
+      if (!userRegister) {
+        const hashedPassword = await bcrypt.hash(
+          req.body.password,
+          parseInt(process.env.BCRYPT_SALT_ROUNDS)
+        );
+        let token = jwt.sign(
+          { email: req.body.email },
+          process.env.JWT_SECRET,
+          {
+            algorithm: "HS256",
+            expiresIn: process.env.JWT_EXPIRATION,
+          }
+        );
+        const register = new db({
+          fullName: req.body.fullName,
+          email: req.body.email,
+          password: hashedPassword,
+          image: req.body.image,
           token: token,
-        };
+        });
 
-        return res.status(200).json({
-          message: "Registration Successfull",
-          code: 200,
-          data: userResponse,
+        const response = await register.save();
+
+        console.log("Register", response);
+
+        if (response) {
+          const userResponse = {
+            fullName: response.fullName,
+            email: response.email,
+            _id: response._id,
+            token: token,
+          };
+
+          return res.status(200).json({
+            message: "Registration Successful",
+            code: 200,
+            data: userResponse,
+          });
+        }
+      } else {
+        return res.status(400).json({
+          message: "Email is already used, please sign in",
+          code: 400,
         });
       }
-    } else {
-      return res.status(400).json({
-        message: "Email is already used , please sign in",
-        code: 400,
+    } catch (error) {
+      return res.status(500).json({
+        message: "Something went wrong",
+        code: 500,
       });
     }
-  } catch (error) {
-    return res.status(400).json({
-      message: "Something went wrong",
-      code: 400,
-    });
-  }
-};
+  },
+];
 
 // ** User Signin Controller
-exports.Signin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password || email.trim() === "" || password.trim() === "") {
-      res.status(400).send({
-        code: 400,
-        message: "Invalid input data. Both email and password are required.",
-      });
-      return;
+exports.Signin = [
+  body("email").isEmail().withMessage("Invalid email"),
+  body("password").notEmpty().withMessage("Password is required"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
 
-    await db.findOne({ email, password }).then((resp) => {
-      if (resp) {
-        let token = jwt.sign({ email: resp?.email }, "AKPP", {
-          algorithm: "HS256",
-        });
-        res.send({
-          code: 200,
-          message: "Login Successful",
-          token: token,
-          data: resp,
-        });
+    try {
+      const { email, password } = req.body;
+
+      const user = await db.findOne({ email });
+      if (user) {
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (validPassword) {
+          let token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+            algorithm: "HS256",
+            expiresIn: process.env.JWT_EXPIRATION,
+          });
+          user.token = token;
+          await user.save();
+
+          res.send({
+            code: 200,
+            message: "Login Successful",
+            token: token,
+            data: user,
+          });
+        } else {
+          res.status(400).json({
+            code: 400,
+            message: "Invalid Credentials",
+          });
+        }
       } else {
-        res.send({
+        res.status(400).json({
           code: 400,
           message: "Invalid Credentials",
         });
       }
-    });
-  } catch (error) {
-    res.send({
-      code: 400,
-      message: "Something went wrong",
-    });
-  }
-};
+    } catch (error) {
+      res.status(500).json({
+        code: 500,
+        message: "Something went wrong",
+      });
+    }
+  },
+];
 
 // ** Update users
 exports.UpdateUser = async (req, res) => {
