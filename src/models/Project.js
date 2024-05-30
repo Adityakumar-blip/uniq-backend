@@ -50,6 +50,9 @@ const projectSchema = new mongoose.Schema(
     message: {
       type: String,
     },
+    githubUrl: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

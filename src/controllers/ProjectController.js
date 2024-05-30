@@ -2,6 +2,7 @@ const { ObjectId } = require("mongodb");
 const upload = require("../../utils/multerConfig");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 exports.addProject = (req, res) => {
   upload(req, res, async (err) => {
@@ -35,7 +36,70 @@ exports.GetProjectById = async (req, res) => {
       return res.status(400).send({ message: "Project ID is required" });
     }
 
-    const projectData = await Project.findById(projectId).populate("author");
+    const aggregation = [
+      {
+        $match: { _id: ObjectId(projectId.toString()) },
+      },
+      {
+        $unwind: {
+          path: "$contributors",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          "contributors.user": {
+            $toObjectId: "$contributors.user",
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "contributors.user",
+          foreignField: "_id",
+          as: "userData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          "contributors.fullName": "$userData.fullName",
+          "contributors.img": "$userData.img",
+        },
+      },
+      {
+        $project: {
+          userData: 0,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          contributors: { $push: "$contributors" },
+          doc: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$doc", { contributors: "$contributors" }],
+          },
+        },
+      },
+      {
+        $sort: {
+          updatedAt: 1,
+        },
+      },
+    ];
+
+    const projectData = await Project.aggregate(aggregation);
 
     if (!projectData) {
       return res.status(404).send({ message: "Project not found" });

@@ -44,8 +44,6 @@ exports.Signup = [
 
         const response = await register.save();
 
-        console.log("Register", response);
-
         if (response) {
           const userResponse = {
             fullName: response.fullName,
