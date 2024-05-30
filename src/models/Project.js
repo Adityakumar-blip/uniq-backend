@@ -44,6 +44,12 @@ const projectSchema = new mongoose.Schema(
     user: {
       type: Object,
     },
+    status: {
+      type: String,
+    },
+    message: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
