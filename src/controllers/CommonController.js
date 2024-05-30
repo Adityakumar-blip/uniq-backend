@@ -20,7 +20,15 @@ exports.addCommon = async (req, res) => {
       const newTag = await Tags.create({
         ...req.body,
       });
-      return sendResponse(res, 201, newTag, "Tag created successfully");
+
+      const tags = [
+        {
+          label: newTag.name,
+          value: newTag._id,
+        },
+      ];
+
+      return sendResponse(res, 201, tags, "Tag created successfully");
     } else if (type === "technology") {
       const existingTech = await Technology.findOne({ name });
 
@@ -31,7 +39,14 @@ exports.addCommon = async (req, res) => {
       const newTech = await Technology.create({
         ...req.body,
       });
-      return sendResponse(res, 201, newTech, "Technology created successfully");
+
+      const tech = [
+        {
+          label: newTech.name,
+          value: newTech._id,
+        },
+      ];
+      return sendResponse(res, 201, tech, "Technology created successfully");
     } else {
       return sendResponse(res, 400, {}, "Invalid type provided");
     }
@@ -45,13 +60,34 @@ exports.getAllCommon = async (req, res) => {
     const { type } = req.query;
 
     if (type === "tags") {
-      const tags = await Tags.find({ status: true });
+      const tags = await Tags.aggregate([
+        { $match: { status: true } },
+        {
+          $project: {
+            label: "$name",
+            value: "$_id",
+          },
+        },
+      ]);
 
-      return sendResponse(res, 201, tags, "fetched all tags");
+      return sendResponse(res, 200, { data: tags, type }, "fetched all tags");
     } else {
-      const tags = await Technology.find({ status: true });
+      const technologies = await Technology.aggregate([
+        { $match: { status: true } },
+        {
+          $project: {
+            label: "$name",
+            value: "$_id",
+          },
+        },
+      ]);
 
-      return sendResponse(res, 201, tags || [], "fetched all technologies");
+      return sendResponse(
+        res,
+        200,
+        { data: technologies, type },
+        "fetched all technologies"
+      );
     }
   } catch (error) {
     return sendResponse(res, 500, {}, error.message);
