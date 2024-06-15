@@ -36,70 +36,7 @@ exports.GetProjectById = async (req, res) => {
       return res.status(400).send({ message: "Project ID is required" });
     }
 
-    const aggregation = [
-      {
-        $match: { _id: ObjectId(projectId.toString()) },
-      },
-      {
-        $unwind: {
-          path: "$contributors",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $addFields: {
-          "contributors.user": {
-            $toObjectId: "$contributors.user",
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "contributors.user",
-          foreignField: "_id",
-          as: "userData",
-        },
-      },
-      {
-        $unwind: {
-          path: "$userData",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $addFields: {
-          "contributors.fullName": "$userData.fullName",
-          "contributors.img": "$userData.img",
-        },
-      },
-      {
-        $project: {
-          userData: 0,
-        },
-      },
-      {
-        $group: {
-          _id: "$_id",
-          contributors: { $push: "$contributors" },
-          doc: { $first: "$$ROOT" },
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: ["$doc", { contributors: "$contributors" }],
-          },
-        },
-      },
-      {
-        $sort: {
-          updatedAt: 1,
-        },
-      },
-    ];
-
-    const projectData = await Project.aggregate(aggregation);
+    const projectData = await Project.findById(projectId).populate("author");
 
     if (!projectData) {
       return res.status(404).send({ message: "Project not found" });
@@ -117,9 +54,34 @@ exports.GetProjectById = async (req, res) => {
 
 exports.getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find();
-    res.json(projects);
+    const { take = 10, search = "", page = 1 } = req.query;
+
+    console.log(req.query);
+
+    const limit = parseInt(take, 10);
+    const skip = (parseInt(page, 10) - 1) * limit;
+
+    const searchQuery = search
+      ? {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { "techstack.label": { $regex: search, $options: "i" } },
+            { "tags.label": { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const projects = await Project.find(searchQuery).skip(skip).limit(limit);
+    const totalProjects = await Project.countDocuments(searchQuery);
+
+    res.json({
+      projects,
+      total: totalProjects,
+      page: parseInt(page, 10),
+      pages: Math.ceil(totalProjects / limit),
+    });
   } catch (err) {
+    console.error("Error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
