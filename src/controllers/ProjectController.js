@@ -1,11 +1,12 @@
 const { ObjectId } = require("mongodb");
-const upload = require("../../utils/multerConfig");
 const Project = require("../models/Project");
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const uploadMiddleware = require("../../utils/multerConfig");
+const sendResponse = require("../../utils/responseHandler");
 
 exports.addProject = (req, res) => {
-  upload(req, res, async (err) => {
+  uploadMiddleware(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err });
     } else {
@@ -17,12 +18,17 @@ exports.addProject = (req, res) => {
             ...req.body,
             techstack: JSON.parse(req.body.techstack),
             tags: JSON.parse(req.body.tags),
-            img: `/uploads/${req.file.filename}`,
+            img: req.img,
             author: req.user._id,
           });
-          res.status(201).json(newProject);
+          return sendResponse(
+            res,
+            201,
+            newProject,
+            "Project added succesfully"
+          );
         } catch (err) {
-          res.status(400).json({ error: err.message });
+          sendResponse(res, 400, {}, err.message);
         }
       }
     }

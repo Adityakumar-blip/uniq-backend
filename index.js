@@ -10,6 +10,7 @@ app.use(cors());
 
 app.use("/uploads", express.static("uploads"));
 
+// mongodb://127.0.0.1:27017
 // "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"
 mongoose.connect(
   "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"

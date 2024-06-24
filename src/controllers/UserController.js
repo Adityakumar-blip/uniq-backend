@@ -1,8 +1,8 @@
-const upload = require("../../utils/multerConfig");
 const db = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { body, validationResult } = require("express-validator");
+const uploadMiddleware = require("../../utils/multerConfig");
 require("dotenv").config();
 
 // ** User Signup Controller
@@ -126,7 +126,7 @@ exports.Signin = [
 
 // ** Update users
 exports.UpdateUser = async (req, res) => {
-  upload(req, res, async (err) => {
+  uploadMiddleware(req, res, async (err) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ message: "File upload error" });
@@ -141,8 +141,8 @@ exports.UpdateUser = async (req, res) => {
       console.log("File", req.file);
 
       const updateData = { ...req.body };
-      if (req.file) {
-        updateData.img = `/uploads/${req.file.filename}`;
+      if (req.img) {
+        updateData.img = req.img;
       }
 
       console.log("updated", updateData);
