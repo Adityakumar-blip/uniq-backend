@@ -133,7 +133,6 @@ exports.UpdateUser = async (req, res) => {
     }
 
     try {
-      console.log(req.body);
       if (!req.body._id) {
         return res.status(400).json({ message: "User ID is required" });
       }
@@ -144,8 +143,6 @@ exports.UpdateUser = async (req, res) => {
       if (req.img) {
         updateData.img = req.img;
       }
-
-      console.log("updated", updateData);
 
       const updatedUser = await db.findByIdAndUpdate(req.body._id, updateData, {
         new: true,
