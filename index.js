@@ -10,11 +10,7 @@ app.use(cors());
 
 app.use("/uploads", express.static("uploads"));
 
-// mongodb://127.0.0.1:27017
-// "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"
-mongoose.connect(
-  "mongodb+srv://unsolvedagency:rkegNgxjurqBdqjK@cluster0.auzkhib.mongodb.net/uniqq"
-);
+mongoose.connect(process.env.MONGO_STRING);
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.once("open", function () {
