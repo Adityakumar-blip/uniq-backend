@@ -8,6 +8,10 @@ const CommentSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, required: true },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
   },
   { timestamps: true }
 );

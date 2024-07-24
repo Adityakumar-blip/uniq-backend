@@ -4,9 +4,9 @@ const ForumSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
-    upvotes: { type: Number, default: 0 },
-    downvotes: { type: Number, default: 0 },
-    share: { type: Number, default: 0 },
+    upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+    downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+    share: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
     tags: [String],
     image: String,
