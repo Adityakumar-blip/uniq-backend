@@ -8,10 +8,17 @@ const CommentSchema = new mongoose.Schema(
       required: true,
     },
     text: { type: String, required: true },
+    replies: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Comment",
+      },
+    ],
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users",
     },
+    isReplied: { type: Boolean, required: true },
   },
   { timestamps: true }
 );

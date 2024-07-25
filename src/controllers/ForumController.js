@@ -139,13 +139,21 @@ exports.addCommentToDiscussion = async (req, res) => {
     });
 
     const forumId = req.body.forumId;
+    const commentId = req.body.commentId;
 
-    await Forum.findByIdAndUpdate(
-      forumId,
-      { $push: { comments: newComment._id } },
-      { new: true }
-    );
-
+    if (commentId) {
+      await Comment.findByIdAndUpdate(
+        commentId,
+        { $push: { replies: newComment._id } },
+        { new: true }
+      );
+    } else {
+      await Forum.findByIdAndUpdate(
+        forumId,
+        { $push: { comments: newComment._id } },
+        { new: true }
+      );
+    }
     return sendResponse(res, 201, newComment, "Comment added successfully");
   } catch (err) {
     sendResponse(res, 400, {}, err.message);
@@ -189,6 +197,88 @@ exports.getCommentsByForum = async (req, res) => {
     ]);
 
     return sendResponse(res, 200, comments, "Fetched all comments");
+  } catch (err) {
+    console.error("Error:", err);
+    return sendResponse(res, 500, {}, err.message);
+  }
+};
+
+exports.getDiscussionById = async (req, res) => {
+  try {
+    const { forumId } = req.query;
+
+    const Forumbyid = await Forum.findById(forumId).populate("author");
+
+    return sendResponse(res, 200, Forumbyid, "Fetched forum successfully");
+  } catch (err) {
+    console.error("Error:", err);
+    return sendResponse(res, 500, {}, err.message);
+  }
+};
+
+exports.getRepliesById = async (req, res) => {
+  try {
+    const { commentId } = req.query;
+
+    const replies = await Comment.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(commentId),
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          let: { replyIds: "$replies" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", "$$replyIds"],
+                },
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                foreignField: "_id",
+                localField: "author",
+                as: "authorData",
+              },
+            },
+            {
+              $unwind: "$authorData",
+            },
+            {
+              $addFields: {
+                author: {
+                  _id: "$authorData._id",
+                  fullName: "$authorData.fullName",
+                  img: "$authorData.img",
+                },
+              },
+            },
+            {
+              $unset: "authorData",
+            },
+          ],
+          as: "repliesData",
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          repliesData: 1,
+        },
+      },
+    ]);
+
+    return sendResponse(
+      res,
+      200,
+      replies.length > 0 ? replies[0].repliesData : [],
+      "Fetched all replies"
+    );
   } catch (err) {
     console.error("Error:", err);
     return sendResponse(res, 500, {}, err.message);

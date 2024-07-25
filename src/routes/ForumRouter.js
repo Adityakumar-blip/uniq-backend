@@ -13,5 +13,7 @@ router.post("/addComment", authorize, forumController.addCommentToDiscussion);
 router.get("/getAllCategory", authorize, forumController.getAllCategory);
 router.get("/getAllDiscussion", forumController.getAllDiscussion);
 router.get("/getCommentsByForum", forumController.getCommentsByForum);
+router.get("/getDiscussionById", forumController.getDiscussionById);
+router.get("/getRepliesById", forumController.getRepliesById);
 
 module.exports = router;
