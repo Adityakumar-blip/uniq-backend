@@ -8,6 +8,7 @@ const ForumSchema = new mongoose.Schema(
     downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     share: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comment" }],
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     tags: [String],
     image: String,
     author: {

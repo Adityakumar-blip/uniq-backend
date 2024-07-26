@@ -5,6 +5,25 @@ const Comment = require("../models/Comment");
 const Forum = require("../models/Forum");
 const ForumCategory = require("../models/ForumCategory");
 
+const updateCategory = async (categoryId, updateDetails) => {
+  try {
+    const updatedCategory = await ForumCategory.findOneAndUpdate(
+      { _id: categoryId },
+      updateDetails,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCategory) {
+      throw new Error("Category not found");
+    }
+
+    return updatedCategory;
+  } catch (error) {
+    console.error("Error updating category:", error);
+    throw error;
+  }
+};
+
 exports.addDiscussion = async (req, res) => {
   if (req.body.image) {
     uploadMiddleware(req, res, async (err) => {
@@ -34,10 +53,18 @@ exports.addDiscussion = async (req, res) => {
     try {
       const discussionData = {
         ...req.body,
+        category: req?.body?.category.value,
         author: req.user._id,
       };
 
       const newDiscussion = await Forum.create(discussionData);
+      const allDiscussions = await (
+        await Forum.find({ category: req.body.category.value })
+      ).length;
+      await updateCategory(req.body.category.value, {
+        discussions: allDiscussions,
+        comments: 10,
+      });
       return sendResponse(
         res,
         201,
@@ -163,7 +190,7 @@ exports.addCommentToDiscussion = async (req, res) => {
 exports.getCommentsByForum = async (req, res) => {
   try {
     const { forumId } = req.query;
-    console.log(forumId);
+
 
     const comments = await Comment.aggregate([
       {
