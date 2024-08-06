@@ -191,7 +191,6 @@ exports.getCommentsByForum = async (req, res) => {
   try {
     const { forumId } = req.query;
 
-
     const comments = await Comment.aggregate([
       {
         $match: {
@@ -234,9 +233,57 @@ exports.getDiscussionById = async (req, res) => {
   try {
     const { forumId } = req.query;
 
-    const Forumbyid = await Forum.findById(forumId).populate("author");
+    if (!mongoose.Types.ObjectId.isValid(forumId)) {
+      return sendResponse(res, 400, {}, "Invalid forum ID");
+    }
 
-    return sendResponse(res, 200, Forumbyid, "Fetched forum successfully");
+    const Forumbyid = await Forum.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(forumId),
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          foreignField: "_id",
+          localField: "category",
+          as: "categoryData",
+        },
+      },
+      {
+        $unwind: "$categoryData",
+      },
+      {
+        $lookup: {
+          from: "users",
+          foreignField: "_id",
+          localField: "author",
+          as: "authorData",
+        },
+      },
+      {
+        $unwind: "$authorData",
+      },
+      {
+        $addFields: {
+          author: {
+            _id: "$authorData._id",
+            fullName: "$authorData.fullName",
+            img: "$authorData.img",
+          },
+        },
+      },
+      {
+        $unset: "authorData",
+      },
+    ]);
+
+    if (Forumbyid.length === 0) {
+      return sendResponse(res, 404, {}, "Forum not found");
+    }
+
+    return sendResponse(res, 200, Forumbyid[0], "Fetched forum successfully");
   } catch (err) {
     console.error("Error:", err);
     return sendResponse(res, 500, {}, err.message);
@@ -306,6 +353,219 @@ exports.getRepliesById = async (req, res) => {
       replies.length > 0 ? replies[0].repliesData : [],
       "Fetched all replies"
     );
+  } catch (err) {
+    console.error("Error:", err);
+    return sendResponse(res, 500, {}, err.message);
+  }
+};
+
+exports.addForumUpvote = async (req, res) => {
+  try {
+    const { forumId } = req.body;
+
+    if (!forumId) {
+      return sendResponse(res, 500, {}, "Forum Id is required");
+    }
+
+    const upvote = await Forum.findByIdAndUpdate(
+      forumId,
+      { $addToSet: { upvotes: req.user._id } },
+      { new: true }
+    );
+    return sendResponse(res, 201, upvote, "upvote added successfully");
+  } catch (error) {
+    return sendResponse(res, 500, {}, error.message);
+  }
+};
+
+exports.addForumDownvote = async (req, res) => {
+  try {
+    const { forumId } = req.body;
+
+    if (!forumId) {
+      return sendResponse(res, 500, {}, "Forum Id is required");
+    }
+
+    const upvote = await Forum.findByIdAndUpdate(
+      forumId,
+      { $addToSet: { downvotes: req.user._id } },
+      { new: true }
+    );
+    return sendResponse(res, 201, upvote, "downvote added successfully");
+  } catch (error) {
+    return sendResponse(res, 500, {}, error.message);
+  }
+};
+
+exports.getDiscussionsByAuthorId = async (req, res) => {
+  try {
+    const { authorId } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(authorId)) {
+      return sendResponse(res, 400, {}, "Invalid author ID");
+    }
+
+    const forumsByAuthor = await Forum.aggregate([
+      {
+        $match: {
+          author: new mongoose.Types.ObjectId(authorId),
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          foreignField: "_id",
+          localField: "category",
+          as: "categoryData",
+        },
+      },
+      {
+        $unwind: "$categoryData",
+      },
+      {
+        $lookup: {
+          from: "users",
+          foreignField: "_id",
+          localField: "author",
+          as: "authorData",
+        },
+      },
+      {
+        $unwind: "$authorData",
+      },
+      {
+        $addFields: {
+          author: {
+            _id: "$authorData._id",
+            fullName: "$authorData.fullName",
+            img: "$authorData.img",
+          },
+        },
+      },
+      {
+        $unset: "authorData",
+      },
+    ]);
+
+    if (forumsByAuthor.length === 0) {
+      return sendResponse(res, 404, {}, "No forums found for this author");
+    }
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const segregatedForums = forumsByAuthor.reduce((acc, forum) => {
+      const createdAt = new Date(forum.createdAt);
+      const year = createdAt.getFullYear();
+      const month = monthNames[createdAt.getMonth()];
+
+      if (!acc[year]) {
+        acc[year] = {};
+      }
+
+      if (!acc[year][month]) {
+        acc[year][month] = [];
+      }
+
+      acc[year][month].push(forum);
+
+      return acc;
+    }, {});
+
+    // Get current year and month
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = monthNames[currentDate.getMonth()];
+
+    // Create a sorted object with the current month on top
+    const sortedForums = {
+      [currentYear]: {
+        [currentMonth]: segregatedForums[currentYear]?.[currentMonth] || [],
+        ...segregatedForums[currentYear],
+      },
+      ...Object.keys(segregatedForums)
+        .filter((year) => year != currentYear)
+        .sort((a, b) => b - a)
+        .reduce((acc, year) => {
+          acc[year] = segregatedForums[year];
+          return acc;
+        }, {}),
+    };
+
+    return sendResponse(res, 200, sortedForums, "Fetched forums successfully");
+  } catch (err) {
+    console.error("Error:", err);
+    return sendResponse(res, 500, {}, err.message);
+  }
+};
+
+exports.getDiscussionsByCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return sendResponse(res, 400, {}, "Invalid forum ID");
+    }
+
+    const Forumbyid = await Forum.aggregate([
+      {
+        $match: {
+          category: new mongoose.Types.ObjectId(categoryId),
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          foreignField: "_id",
+          localField: "category",
+          as: "categoryData",
+        },
+      },
+      {
+        $unwind: "$categoryData",
+      },
+      {
+        $lookup: {
+          from: "users",
+          foreignField: "_id",
+          localField: "author",
+          as: "authorData",
+        },
+      },
+      {
+        $unwind: "$authorData",
+      },
+      {
+        $addFields: {
+          author: {
+            _id: "$authorData._id",
+            fullName: "$authorData.fullName",
+            img: "$authorData.img",
+          },
+        },
+      },
+      {
+        $unset: "authorData",
+      },
+    ]);
+
+    if (Forumbyid.length === 0) {
+      return sendResponse(res, 404, {}, "Forum not found");
+    }
+
+    return sendResponse(res, 200, Forumbyid, "Fetched forum successfully");
   } catch (err) {
     console.error("Error:", err);
     return sendResponse(res, 500, {}, err.message);

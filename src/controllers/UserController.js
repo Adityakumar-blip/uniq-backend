@@ -137,7 +137,6 @@ exports.UpdateUser = async (req, res) => {
         return res.status(400).json({ message: "User ID is required" });
       }
 
-      console.log("File", req.file);
 
       const updateData = { ...req.body };
       if (req.img) {

@@ -62,8 +62,6 @@ exports.getAllProjects = async (req, res) => {
   try {
     const { take = 10, search = "", page = 1 } = req.query;
 
-    console.log(req.query);
-
     const limit = parseInt(take, 10);
     const skip = (parseInt(page, 10) - 1) * limit;
 
@@ -157,5 +155,60 @@ exports.ContributeToProject = async (req, res) => {
     res
       .status(500)
       .json({ message: "An error occurred while contributing to the project" });
+  }
+};
+
+exports.getProjectsByAuthor = async (req, res) => {
+  try {
+    const { authorId } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(authorId)) {
+      return sendResponse(res, 400, {}, "Invalid author ID");
+    }
+
+    const projectByAuthor = await Project.aggregate([
+      {
+        $match: {
+          author: new mongoose.Types.ObjectId(authorId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          foreignField: "_id",
+          localField: "author",
+          as: "authorData",
+        },
+      },
+      {
+        $unwind: "$authorData",
+      },
+      {
+        $addFields: {
+          author: {
+            _id: "$authorData._id",
+            fullName: "$authorData.fullName",
+            img: "$authorData.img",
+          },
+        },
+      },
+      {
+        $unset: "authorData",
+      },
+    ]);
+
+    if (projectByAuthor.length === 0) {
+      return sendResponse(res, 404, {}, "No projects found for this author");
+    }
+
+    return sendResponse(
+      res,
+      200,
+      projectByAuthor,
+      "Fetched projects successfully"
+    );
+  } catch (err) {
+    console.error("Error:", err);
+    return sendResponse(res, 500, {}, err.message);
   }
 };
