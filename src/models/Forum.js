@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const ForumSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String },
     upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     downvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     share: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
