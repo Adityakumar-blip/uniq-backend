@@ -150,6 +150,9 @@ exports.getAllDiscussion = async (req, res) => {
       {
         $unset: "authorData",
       },
+      {
+        $sort: { createdAt: -1 },
+      },
     ]);
     return sendResponse(res, 200, forums, "fetched all forums");
   } catch (err) {
@@ -367,12 +370,27 @@ exports.addForumUpvote = async (req, res) => {
       return sendResponse(res, 500, {}, "Forum Id is required");
     }
 
-    const upvote = await Forum.findByIdAndUpdate(
-      forumId,
-      { $addToSet: { upvotes: req.user._id } },
-      { new: true }
-    );
-    return sendResponse(res, 201, upvote, "upvote added successfully");
+    const forum = await Forum.findById(forumId);
+
+    if (!forum) {
+      return sendResponse(res, 404, {}, "Forum not found");
+    }
+
+    const hasUpvoted = forum.upvotes.includes(req.user._id);
+
+    const update = hasUpvoted
+      ? { $pull: { upvotes: req.user._id } }
+      : { $addToSet: { upvotes: req.user._id } };
+
+    const updatedForum = await Forum.findByIdAndUpdate(forumId, update, {
+      new: true,
+    });
+
+    const message = hasUpvoted
+      ? "Upvote removed successfully"
+      : "Upvote added successfully";
+
+    return sendResponse(res, 201, updatedForum, message);
   } catch (error) {
     return sendResponse(res, 500, {}, error.message);
   }
