@@ -15,7 +15,6 @@ const authorize = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await db.findOne({ email: decoded.email, token: token });
 
-
     if (!user) {
       return res.status(401).json({ message: "Invalid token." });
     }
@@ -27,4 +26,11 @@ const authorize = async (req, res, next) => {
   }
 };
 
-module.exports = authorize;
+const isAdmin = (req, res, next) => {
+  if (req.user.role === "admin" || req.user.role === "superadmin") {
+    next();
+  } else {
+    return res.status(403).json({ message: "Access denied" });
+  }
+};
+module.exports = { authorize, isAdmin };

@@ -1,6 +1,6 @@
 const express = require("express");
 const commonController = require("../controllers/CommonController");
-const authorize = require("../middleware/middleware");
+// const authorize = require("../middleware/middleware");
 
 const router = express.Router();
 

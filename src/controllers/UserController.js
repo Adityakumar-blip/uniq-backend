@@ -40,6 +40,7 @@ exports.Signup = [
           password: hashedPassword,
           image: req.body.image,
           token: token,
+          role: "user",
         });
 
         const response = await register.save();
@@ -137,7 +138,6 @@ exports.UpdateUser = async (req, res) => {
         return res.status(400).json({ message: "User ID is required" });
       }
 
-
       const updateData = { ...req.body };
       if (req.img) {
         updateData.img = req.img;
@@ -183,5 +183,34 @@ exports.GetAllUser = async (req, res) => {
       message: "Something went wrong",
       code: 400,
     });
+  }
+};
+
+exports.CreateAdminUser = async (req, res) => {
+  const { fullName, email, password, role } = req.body;
+
+  if (role === "admin" && req.user.role !== "superadmin") {
+    return res
+      .status(403)
+      .json({ message: "Only super admins can create admin users" });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      fullName,
+      email,
+      password: hashedPassword,
+      role: role || "admin",
+    });
+
+    await newUser.save();
+
+    res
+      .status(201)
+      .json({ message: "User created successfully", user: newUser });
+  } catch (error) {
+    res.status(500).json({ message: "Error creating user", error });
   }
 };
