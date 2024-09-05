@@ -124,6 +124,74 @@ exports.Signin = [
   },
 ];
 
+// ** Admin Signin
+exports.AdminSignin = [
+  body("email").isEmail().withMessage("Invalid email"),
+  body("password").notEmpty().withMessage("Password is required"),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { email, password } = req.body;
+
+      // Find the user in the database
+      const user = await db.findOne({ email });
+      if (user) {
+        // Check if the user has the role of admin or super admin
+        if (user.role === "admin" || user.role === "superadmin") {
+          // Verify the password
+          const validPassword = await bcrypt.compare(password, user.password);
+          if (validPassword) {
+            // Create a token
+            let token = jwt.sign(
+              { email: user.email, role: user.role },
+              process.env.JWT_SECRET,
+              {
+                algorithm: "HS256",
+                expiresIn: process.env.JWT_EXPIRATION,
+              }
+            );
+            user.token = token;
+            await user.save();
+
+            // Respond with success
+            res.send({
+              code: 200,
+              message: "Login Successful",
+              token: token,
+              data: user,
+            });
+          } else {
+            res.status(400).json({
+              code: 400,
+              message: "Invalid Credentials",
+            });
+          }
+        } else {
+          // If the user does not have the admin or super admin role
+          res.status(403).json({
+            code: 403,
+            message: "Access denied. Admins only.",
+          });
+        }
+      } else {
+        res.status(400).json({
+          code: 400,
+          message: "Invalid Credentials",
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        code: 500,
+        message: "Something went wrong",
+      });
+    }
+  },
+];
+
 // ** Update users
 exports.UpdateUser = async (req, res) => {
   uploadMiddleware(req, res, async (err) => {
@@ -136,7 +204,6 @@ exports.UpdateUser = async (req, res) => {
       if (!req.body._id) {
         return res.status(400).json({ message: "User ID is required" });
       }
-
 
       const updateData = { ...req.body };
       if (req.img) {
