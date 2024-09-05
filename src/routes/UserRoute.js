@@ -9,5 +9,6 @@ router.post("/signin", UserController.Signin);
 router.post("/updateUser", UserController.UpdateUser);
 router.post("/createUser", authorize, isAdmin, UserController.CreateAdminUser);
 router.post("/getAllUsers", authorize, UserController.GetAllUser);
+router.post("/adminSignin", UserController.AdminSignin);
 
 module.exports = router;

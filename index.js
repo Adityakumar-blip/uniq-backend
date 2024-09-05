@@ -1,8 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+
 const serverless = require("serverless-http");
 const routes = require("./src/routes/routes");
+const User = require("./src/models/User");
 const app = express();
 const PORT = 3001;
 
@@ -15,7 +18,32 @@ const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.once("open", function () {
   console.log("Connected to MongoDB database");
+  seedSuperAdmin();
 });
+
+async function seedSuperAdmin() {
+  try {
+    const superAdminExists = await User.findOne({ role: "superadmin" });
+
+    if (!superAdminExists) {
+      const hashedPassword = await bcrypt.hash("Test@123", 10);
+
+      const superAdmin = new User({
+        username: "superadmin",
+        email: "aditya.kamal004@gmail.com",
+        password: hashedPassword,
+        role: "superadmin",
+      });
+
+      await superAdmin.save();
+      console.log("Superadmin user created successfully");
+    } else {
+      console.log("Superadmin user already exists");
+    }
+  } catch (error) {
+    console.error("Error seeding superadmin:", error);
+  }
+}
 
 app.get("/", (req, res) => {
   res.send("Hello, world, this is aditya!");
