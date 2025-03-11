@@ -75,7 +75,11 @@ exports.getAllProjects = async (req, res) => {
         }
       : {};
 
-    const projects = await Project.find(searchQuery).skip(skip).limit(limit);
+    const projects = await Project.find(searchQuery)
+      .populate("author")
+      .skip(skip)
+      .limit(limit);
+
     const totalProjects = await Project.countDocuments(searchQuery);
 
     res.json({
