@@ -42,7 +42,7 @@ exports.GetProjectById = async (req, res) => {
       return res.status(400).send({ message: "Project ID is required" });
     }
 
-    const projectData = await Project.findById(projectId).populate("author").populate('contributors');
+    const projectData = await Project.findById(projectId).populate("author").populate('contributors.user');
 
     if (!projectData) {
       return res.status(404).send({ message: "Project not found" });
