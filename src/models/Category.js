@@ -5,19 +5,23 @@ const CategorySchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true, // Ensures no duplicate categories
+      unique: true,
       trim: true,
     },
     description: {
-      type: String, // Optional description of the category
+      type: String,
     },
     isActive: {
       type: Boolean,
-      default: true, // To enable/disable categories dynamically
+      default: true,
+    },
+    color: {
+      type: String,
+      required: true,
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt & updatedAt
+    timestamps: true,
   }
 );
 

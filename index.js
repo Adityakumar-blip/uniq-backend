@@ -30,7 +30,7 @@ async function seedSuperAdmin() {
 
       const superAdmin = new User({
         username: "superadmin",
-        email: "aditya.kamal004@gmail.com",
+        email: "adityakamal303@gmail.com",
         password: hashedPassword,
         role: "superadmin",
       });

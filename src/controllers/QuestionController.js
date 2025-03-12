@@ -20,9 +20,21 @@ exports.getAllQuestions = async (req, res) => {
   }
 };
 
+exports.getQuestionsByCategoryId = async (req, res) => {
+  try {
+    const questions = await Question.find({ category: req.query.id }).populate(
+      "category",
+      "name"
+    );
+    sendResponse(res, 200, questions, "Questions retrieved successfully");
+  } catch (error) {
+    sendResponse(res, 500, {}, error.message);
+  }
+};
+
 exports.getQuestionById = async (req, res) => {
   try {
-    const question = await Question.findById(req.params.id).populate(
+    const question = await Question.findById(req.query.id).populate(
       "category",
       "name"
     );

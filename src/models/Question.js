@@ -3,14 +3,14 @@ const mongoose = require("mongoose");
 const AnswerSchema = new mongoose.Schema({
   text: {
     type: String,
-    required: true, // Main explanation
+    required: true,
   },
   codeSnippet: {
-    type: String, // Optional code block (if applicable)
+    type: String,
   },
   references: [
     {
-      source: String, // URL or book/article reference
+      source: String,
     },
   ],
 });
@@ -18,17 +18,19 @@ const AnswerSchema = new mongoose.Schema({
 const QuestionSchema = new mongoose.Schema(
   {
     category: {
-      type: String,
-      required: true,
-      enum: ["React", "Node.js", "JavaScript", "CSS"], // Extend as needed
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "QuestionCategory",
     },
-    questionText: {
+    question: {
       type: String,
       required: true,
-      unique: true, // Prevent duplicate questions
     },
     answers: {
-      type: [AnswerSchema], // Supports multiple answers
+      type: [AnswerSchema],
+      required: true,
+    },
+    description: {
+      type: String,
       required: true,
     },
     type: {
@@ -45,25 +47,25 @@ const QuestionSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1,
-      max: 10, // Frequency rating from 1 to 10
+      max: 10,
     },
     tags: {
-      type: [String], // Extra tags (e.g., "hooks", "state management")
+      type: [String],
       default: [],
     },
     relatedQuestions: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Question", // Link to related questions
+        ref: "Question",
       },
     ],
     author: {
-      type: String, // Can store contributor’s name or ID
+      type: String,
       default: "Admin",
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt & updatedAt
+    timestamps: true,
   }
 );
 
